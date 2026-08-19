@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "creature_spawn",
+	"version": "${version}",
+	"name": "Creature Spawn",
+	"description": "OP spawn catalog for vanilla living mobs. 作弊刷怪图鉴。",
+	"authors": [
+		"namimono"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.namimono.creaturespawn.CreatureSpawn"
+		],
+		"client": [
+			"com.namimono.creaturespawn.client.CreatureSpawnClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

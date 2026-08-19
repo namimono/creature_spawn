@@ -1,0 +1,13 @@
+{
+  "commands.creature_spawn.unknown_entity": "Unknown or unsupported living entity: %s",
+  "commands.creature_spawn.failed": "Could not find a valid spawn position",
+  "commands.creature_spawn.success": "Spawned %s × %s",
+  "screen.creature_spawn.spawn_catalog.title": "Spawn Catalog",
+  "screen.creature_spawn.spawn_catalog.group.hostile": "Hostile",
+  "screen.creature_spawn.spawn_catalog.group.neutral": "Neutral",
+  "screen.creature_spawn.spawn_catalog.group.passive": "Passive",
+  "screen.creature_spawn.spawn_catalog.group.boss": "Boss",
+  "screen.creature_spawn.spawn_catalog.quantity": "Count",
+  "screen.creature_spawn.spawn_catalog.spawn": "Spawn",
+  "screen.creature_spawn.spawn_catalog.page": "Page %s/%s · %s selected"
+}

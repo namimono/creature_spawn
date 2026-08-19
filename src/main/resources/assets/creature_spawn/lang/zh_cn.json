@@ -1,0 +1,13 @@
+{
+  "commands.creature_spawn.unknown_entity": "未知或不支持的活体：%s",
+  "commands.creature_spawn.failed": "无法找到有效生成落点",
+  "commands.creature_spawn.success": "已生成 %s 只 %s",
+  "screen.creature_spawn.spawn_catalog.title": "刷怪图鉴",
+  "screen.creature_spawn.spawn_catalog.group.hostile": "敌对",
+  "screen.creature_spawn.spawn_catalog.group.neutral": "中立",
+  "screen.creature_spawn.spawn_catalog.group.passive": "被动",
+  "screen.creature_spawn.spawn_catalog.group.boss": "Boss",
+  "screen.creature_spawn.spawn_catalog.quantity": "数量",
+  "screen.creature_spawn.spawn_catalog.spawn": "生成",
+  "screen.creature_spawn.spawn_catalog.page": "第 %s/%s 页 · 已选 %s 种"
+}
