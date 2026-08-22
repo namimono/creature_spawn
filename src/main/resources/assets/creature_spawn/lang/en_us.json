@@ -9,5 +9,7 @@
   "screen.creature_spawn.spawn_catalog.group.boss": "Boss",
   "screen.creature_spawn.spawn_catalog.quantity": "Count",
   "screen.creature_spawn.spawn_catalog.spawn": "Spawn",
+  "screen.creature_spawn.spawn_catalog.select_page": "Select Page",
+  "screen.creature_spawn.spawn_catalog.deselect_page": "Deselect Page",
   "screen.creature_spawn.spawn_catalog.page": "Page %s/%s · %s selected"
 }

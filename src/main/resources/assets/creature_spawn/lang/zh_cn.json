@@ -9,5 +9,7 @@
   "screen.creature_spawn.spawn_catalog.group.boss": "Boss",
   "screen.creature_spawn.spawn_catalog.quantity": "数量",
   "screen.creature_spawn.spawn_catalog.spawn": "生成",
+  "screen.creature_spawn.spawn_catalog.select_page": "全选当前页",
+  "screen.creature_spawn.spawn_catalog.deselect_page": "取消本页",
   "screen.creature_spawn.spawn_catalog.page": "第 %s/%s 页 · 已选 %s 种"
 }

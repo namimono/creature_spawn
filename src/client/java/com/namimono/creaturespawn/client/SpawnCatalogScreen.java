@@ -48,6 +48,7 @@ public final class SpawnCatalogScreen extends Screen {
 	private int pageCount = 1;
 	private String quantityText = Integer.toString(SpawnQuantity.DEFAULT);
 	private EditBox quantityBox;
+	private Button selectPageButton;
 	private Button spawnButton;
 	private Button previousButton;
 	private Button nextButton;
@@ -72,11 +73,26 @@ public final class SpawnCatalogScreen extends Screen {
 		}
 
 		int footerY = height - 28;
+		int selectPageWidth = 76;
+		int spawnWidth = 72;
+		int quantityLabelWidth = 28;
+		int quantityBoxWidth = 36;
+		int spacing = 10;
+		int totalControlsWidth = selectPageWidth + spacing + quantityLabelWidth + quantityBoxWidth + spacing + spawnWidth;
+		int startX = (width - totalControlsWidth) / 2;
+
+		selectPageButton = Button.builder(
+			Component.translatable("screen.creature_spawn.spawn_catalog.select_page"),
+			button -> toggleSelectCurrentPage()
+		).bounds(startX, footerY, selectPageWidth, 20).build();
+		addRenderableWidget(selectPageButton);
+
+		int quantityBoxX = startX + selectPageWidth + spacing + quantityLabelWidth;
 		quantityBox = new EditBox(
 			font,
-			width / 2 - 52,
+			quantityBoxX,
 			footerY,
-			36,
+			quantityBoxWidth,
 			20,
 			Component.translatable("screen.creature_spawn.spawn_catalog.quantity")
 		);
@@ -89,10 +105,11 @@ public final class SpawnCatalogScreen extends Screen {
 		});
 		addRenderableWidget(quantityBox);
 
+		int spawnButtonX = quantityBoxX + quantityBoxWidth + spacing;
 		spawnButton = Button.builder(
 			Component.translatable("screen.creature_spawn.spawn_catalog.spawn"),
 			button -> submit()
-		).bounds(width / 2, footerY, 72, 20).build();
+		).bounds(spawnButtonX, footerY, spawnWidth, 20).build();
 		addRenderableWidget(spawnButton);
 
 		int pagingY = footerY - 25;
@@ -124,8 +141,8 @@ public final class SpawnCatalogScreen extends Screen {
 		catalogButtons.forEach(this::removeWidget);
 		catalogButtons.clear();
 
-		int columns = Math.max(1, Math.min(MAX_COLUMNS, (width - 20) / (CELL_WIDTH + CELL_GAP)));
-		int rows = Math.max(1, Math.min(MAX_ROWS, (height - 126) / (CELL_HEIGHT + CELL_GAP)));
+		int columns = calculateColumns();
+		int rows = calculateRows();
 		int pageSize = columns * rows;
 		List<EntityType<?>> entries = groupedEntries.get(activeGroup);
 		pageCount = Math.max(1, (entries.size() + pageSize - 1) / pageSize);
@@ -152,6 +169,80 @@ public final class SpawnCatalogScreen extends Screen {
 
 		previousButton.active = page > 0;
 		nextButton.active = page + 1 < pageCount;
+		updateSelectPageButton();
+	}
+
+	private int calculateColumns() {
+		return Math.max(1, Math.min(MAX_COLUMNS, (width - 20) / (CELL_WIDTH + CELL_GAP)));
+	}
+
+	private int calculateRows() {
+		return Math.max(1, Math.min(MAX_ROWS, (height - 126) / (CELL_HEIGHT + CELL_GAP)));
+	}
+
+	private List<EntityType<?>> currentPageEntries() {
+		List<EntityType<?>> entries = groupedEntries.get(activeGroup);
+		if (entries == null || entries.isEmpty()) {
+			return List.of();
+		}
+		int pageSize = calculateColumns() * calculateRows();
+		int first = page * pageSize;
+		if (first >= entries.size()) {
+			return List.of();
+		}
+		int last = Math.min(entries.size(), first + pageSize);
+		return entries.subList(first, last);
+	}
+
+	private boolean isCurrentPageAllSelected(List<EntityType<?>> currentEntries) {
+		if (currentEntries.isEmpty()) {
+			return false;
+		}
+		for (EntityType<?> type : currentEntries) {
+			if (!selectedIds.contains(EntityType.getKey(type))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private void toggleSelectCurrentPage() {
+		List<EntityType<?>> currentEntries = currentPageEntries();
+		if (currentEntries.isEmpty()) {
+			return;
+		}
+
+		boolean allSelected = isCurrentPageAllSelected(currentEntries);
+		for (EntityType<?> type : currentEntries) {
+			ResourceLocation id = EntityType.getKey(type);
+			if (allSelected) {
+				selectedIds.remove(id);
+			} else {
+				selectedIds.add(id);
+			}
+		}
+
+		updateSelectPageButton();
+		updateSpawnButton();
+	}
+
+	private void updateSelectPageButton() {
+		if (selectPageButton == null) {
+			return;
+		}
+		List<EntityType<?>> currentEntries = currentPageEntries();
+		if (currentEntries.isEmpty()) {
+			selectPageButton.active = false;
+			selectPageButton.setMessage(Component.translatable("screen.creature_spawn.spawn_catalog.select_page"));
+			return;
+		}
+		selectPageButton.active = true;
+		boolean allSelected = isCurrentPageAllSelected(currentEntries);
+		selectPageButton.setMessage(Component.translatable(
+			allSelected
+				? "screen.creature_spawn.spawn_catalog.deselect_page"
+				: "screen.creature_spawn.spawn_catalog.select_page"
+		));
 	}
 
 	private LivingEntity previewEntity(EntityType<?> type) {
@@ -172,6 +263,7 @@ public final class SpawnCatalogScreen extends Screen {
 		if (!selectedIds.add(id)) {
 			selectedIds.remove(id);
 		}
+		updateSelectPageButton();
 		updateSpawnButton();
 	}
 
@@ -229,10 +321,11 @@ public final class SpawnCatalogScreen extends Screen {
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
 		renderBackground(graphics, mouseX, mouseY, delta);
 		graphics.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
+		Component quantityLabel = Component.translatable("screen.creature_spawn.spawn_catalog.quantity");
 		graphics.drawString(
 			font,
-			Component.translatable("screen.creature_spawn.spawn_catalog.quantity"),
-			width / 2 - 92,
+			quantityLabel,
+			quantityBox.getX() - font.width(quantityLabel) - 4,
 			height - 22,
 			0xFFFFFFFF
 		);
