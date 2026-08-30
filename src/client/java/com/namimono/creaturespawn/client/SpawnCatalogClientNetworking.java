@@ -10,7 +10,7 @@ public final class SpawnCatalogClientNetworking {
 
 	public static void register() {
 		ClientPlayNetworking.registerGlobalReceiver(OpenSpawnCatalogS2CPayload.TYPE, (payload, context) -> {
-			context.client().setScreen(new SpawnCatalogScreen());
+			SpawnCatalogScreens.openFromServer(context.client());
 		});
 	}
 }

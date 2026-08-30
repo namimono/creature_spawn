@@ -1,5 +1,6 @@
 package com.namimono.creaturespawn.client;
 
+import com.namimono.creaturespawn.SpawnCatalogOpenPolicy;
 import com.namimono.creaturespawn.command.SpawnCatalog;
 import com.namimono.creaturespawn.command.SpawnGroup;
 import com.namimono.creaturespawn.command.SpawnQuantity;
@@ -319,6 +320,9 @@ public final class SpawnCatalogScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+		if (!SpawnCatalogOpenPolicy.shouldRender(FlashbackReplay.isActive())) {
+			return;
+		}
 		renderBackground(graphics, mouseX, mouseY, delta);
 		graphics.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
 		Component quantityLabel = Component.translatable("screen.creature_spawn.spawn_catalog.quantity");
