@@ -10,7 +10,17 @@
   "screen.creature_spawn.spawn_catalog.group.boss": "Boss",
   "screen.creature_spawn.spawn_catalog.quantity": "数量",
   "screen.creature_spawn.spawn_catalog.spawn": "生成",
+  "screen.creature_spawn.spawn_catalog.lock_pose.off": "自由移动",
+  "screen.creature_spawn.spawn_catalog.lock_pose.on": "固定位置",
+  "screen.creature_spawn.spawn_catalog.lock_pose.tooltip": "只锁定位置和朝向，受伤、攻击等动作仍可播放",
   "screen.creature_spawn.spawn_catalog.select_page": "全选当前页",
   "screen.creature_spawn.spawn_catalog.deselect_page": "取消本页",
-  "screen.creature_spawn.spawn_catalog.page": "第 %s/%s 页 · 已选 %s 种"
+  "screen.creature_spawn.spawn_catalog.page": "第 %s/%s 页 · 已选 %s 种",
+  "screen.creature_spawn.spawn_catalog.place_mode": "去摆放",
+  "screen.creature_spawn.spawn_catalog.place_mode.tooltip": "先选生物和是否固定，再对着方块右键一只一只放下",
+  "key.categories.creature_spawn": "刷怪图鉴",
+  "key.creature_spawn.place_mode": "摆放生物",
+  "hud.creature_spawn.place_mode.place": "摆放 %s · 剩余 %s · 右键放下 · 左键改选已放下的（%s 退出）",
+  "hud.creature_spawn.place_mode.move": "已选中：右键放到新位置，左键空白取消（%s 退出）",
+  "hud.creature_spawn.place_mode.select": "左键选中已放下的生物，再右键挪位置（%s 退出）"
 }

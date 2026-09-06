@@ -2,6 +2,7 @@ package com.namimono.creaturespawn.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -60,20 +61,35 @@ public final class SpawnCommands {
 			.executes(ctx -> openCatalogAction.open(ctx.getSource()))
 			.then(Commands.argument("entity", ResourceLocationArgument.id())
 				.suggests(ENTITY_SUGGESTIONS)
-				.executes(ctx -> spawn(ctx, null, spawnAction))
+				.executes(ctx -> spawn(ctx, null, false, spawnAction))
 				.then(Commands.argument(
 					"quantity",
 					IntegerArgumentType.integer(SpawnQuantity.MIN, SpawnQuantity.MAX)
 				).executes(ctx -> spawn(
 					ctx,
 					IntegerArgumentType.getInteger(ctx, "quantity"),
+					false,
 					spawnAction
-				)))));
+				)).then(Commands.argument("lock_pose", BoolArgumentType.bool())
+					.executes(ctx -> spawn(
+						ctx,
+						IntegerArgumentType.getInteger(ctx, "quantity"),
+						BoolArgumentType.getBool(ctx, "lock_pose"),
+						spawnAction
+					))))
+				.then(Commands.argument("lock_pose", BoolArgumentType.bool())
+					.executes(ctx -> spawn(
+						ctx,
+						null,
+						BoolArgumentType.getBool(ctx, "lock_pose"),
+						spawnAction
+					)))));
 	}
 
 	private static int spawn(
 		CommandContext<CommandSourceStack> ctx,
 		Integer requestedQuantity,
+		boolean lockPose,
 		SpawnAction spawnAction
 	)
 		throws CommandSyntaxException {
@@ -81,7 +97,7 @@ public final class SpawnCommands {
 		SpawnEntry entry = SpawnCatalog.find(id)
 			.orElseThrow(() -> UNKNOWN_ENTITY.create(id));
 		SpawnQuantity quantity = SpawnQuantity.fromNullable(requestedQuantity);
-		int spawned = spawnAction.spawn(ctx.getSource(), entry, quantity);
+		int spawned = spawnAction.spawn(ctx.getSource(), entry, quantity, lockPose);
 		if (spawned == 0) {
 			throw SPAWN_FAILED.create();
 		}
@@ -96,9 +112,14 @@ public final class SpawnCommands {
 		return spawned;
 	}
 
-	private static int spawnInWorld(CommandSourceStack source, SpawnEntry entry, SpawnQuantity quantity)
+	private static int spawnInWorld(
+		CommandSourceStack source,
+		SpawnEntry entry,
+		SpawnQuantity quantity,
+		boolean lockPose
+	)
 		throws CommandSyntaxException {
-		return LivingSpawner.spawn(source.getPlayerOrException(), List.of(entry), quantity);
+		return LivingSpawner.spawn(source.getPlayerOrException(), List.of(entry), quantity, lockPose);
 	}
 
 	private static int openCatalogForPlayer(CommandSourceStack source) throws CommandSyntaxException {
@@ -108,8 +129,12 @@ public final class SpawnCommands {
 
 	@FunctionalInterface
 	interface SpawnAction {
-		int spawn(CommandSourceStack source, SpawnEntry entry, SpawnQuantity quantity)
-			throws CommandSyntaxException;
+		int spawn(
+			CommandSourceStack source,
+			SpawnEntry entry,
+			SpawnQuantity quantity,
+			boolean lockPose
+		) throws CommandSyntaxException;
 	}
 
 	@FunctionalInterface

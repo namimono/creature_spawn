@@ -11,9 +11,13 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-/** 客户端图鉴提交的已选实体 id 与每种生成数量。 */
-public record SpawnCatalogC2SPayload(List<ResourceLocation> entityIds, SpawnQuantity quantity)
-	implements CustomPacketPayload {
+/** 图鉴提交：直接刷一批，或进入逐只摆放。 */
+public record SpawnCatalogC2SPayload(
+	List<ResourceLocation> entityIds,
+	SpawnQuantity quantity,
+	boolean lockPose,
+	boolean manualPlacement
+) implements CustomPacketPayload {
 	public static final Type<SpawnCatalogC2SPayload> TYPE =
 		new Type<>(CreatureSpawn.id("spawn_catalog"));
 	private static final StreamCodec<ByteBuf, List<ResourceLocation>> IDS_CODEC =
@@ -26,6 +30,10 @@ public record SpawnCatalogC2SPayload(List<ResourceLocation> entityIds, SpawnQuan
 			SpawnCatalogC2SPayload::entityIds,
 			QUANTITY_CODEC,
 			SpawnCatalogC2SPayload::quantity,
+			ByteBufCodecs.BOOL,
+			SpawnCatalogC2SPayload::lockPose,
+			ByteBufCodecs.BOOL,
+			SpawnCatalogC2SPayload::manualPlacement,
 			SpawnCatalogC2SPayload::new
 		);
 

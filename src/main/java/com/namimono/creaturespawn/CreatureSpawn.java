@@ -1,6 +1,9 @@
 package com.namimono.creaturespawn;
 
+import com.namimono.creaturespawn.command.MobPlacementSessions;
 import com.namimono.creaturespawn.command.SpawnCommands;
+import com.namimono.creaturespawn.command.SpawnedMobs;
+import com.namimono.creaturespawn.command.SpawnPoseLocks;
 import com.namimono.creaturespawn.network.ModNetworking;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.ResourceLocation;
@@ -15,6 +18,9 @@ public class CreatureSpawn implements ModInitializer {
 	public void onInitialize() {
 		ModNetworking.register();
 		SpawnCommands.register();
+		SpawnedMobs.bootstrap();
+		SpawnPoseLocks.register();
+		MobPlacementSessions.register();
 		LOGGER.info("Creature Spawn initialized");
 	}
 

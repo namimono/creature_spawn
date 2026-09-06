@@ -10,7 +10,17 @@
   "screen.creature_spawn.spawn_catalog.group.boss": "Boss",
   "screen.creature_spawn.spawn_catalog.quantity": "Count",
   "screen.creature_spawn.spawn_catalog.spawn": "Spawn",
+  "screen.creature_spawn.spawn_catalog.lock_pose.off": "Free Move",
+  "screen.creature_spawn.spawn_catalog.lock_pose.on": "Lock Pose",
+  "screen.creature_spawn.spawn_catalog.lock_pose.tooltip": "Locks position and facing only. Hurt, attack, and other actions still play.",
   "screen.creature_spawn.spawn_catalog.select_page": "Select Page",
   "screen.creature_spawn.spawn_catalog.deselect_page": "Deselect Page",
-  "screen.creature_spawn.spawn_catalog.page": "Page %s/%s · %s selected"
+  "screen.creature_spawn.spawn_catalog.page": "Page %s/%s · %s selected",
+  "screen.creature_spawn.spawn_catalog.place_mode": "Place",
+  "screen.creature_spawn.spawn_catalog.place_mode.tooltip": "Pick mobs and lock pose, then right-click block faces to place them one by one",
+  "key.categories.creature_spawn": "Creature Spawn",
+  "key.creature_spawn.place_mode": "Place Mobs",
+  "hud.creature_spawn.place_mode.place": "Placing %s · %s left · right-click to place · left-click a placed mob to move (%s to exit)",
+  "hud.creature_spawn.place_mode.move": "Selected: right-click a new block, left-click empty space to cancel (%s to exit)",
+  "hud.creature_spawn.place_mode.select": "Left-click a placed mob, then right-click to move it (%s to exit)"
 }

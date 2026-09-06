@@ -53,6 +53,14 @@ class SpawnCommandsTest {
 			"creature_spawn minecraft:zombie 16",
 			sourceWithPermission(2)
 		));
+		assertFullyParsed(dispatcher.parse(
+			"creature_spawn minecraft:zombie true",
+			sourceWithPermission(2)
+		));
+		assertFullyParsed(dispatcher.parse(
+			"creature_spawn minecraft:zombie 3 false",
+			sourceWithPermission(2)
+		));
 	}
 
 	@Test
@@ -87,7 +95,7 @@ class SpawnCommandsTest {
 		CommandDispatcher<CommandSourceStack> dispatcher = new CommandDispatcher<>();
 		SpawnCommands.register(
 			dispatcher,
-			(source, entry, quantity) -> quantity.value(),
+			(source, entry, quantity, lockPose) -> quantity.value(),
 			source -> opens.incrementAndGet()
 		);
 
@@ -123,9 +131,11 @@ class SpawnCommandsTest {
 	void legalEntityAndQuantityInvokeTheWorldSpawnBoundary() throws CommandSyntaxException {
 		AtomicReference<SpawnEntry> requestedEntry = new AtomicReference<>();
 		AtomicReference<SpawnQuantity> requestedQuantity = new AtomicReference<>();
-		CommandDispatcher<CommandSourceStack> dispatcher = registeredDispatcher((source, entry, quantity) -> {
+		AtomicReference<Boolean> requestedLockPose = new AtomicReference<>();
+		CommandDispatcher<CommandSourceStack> dispatcher = registeredDispatcher((source, entry, quantity, lockPose) -> {
 			requestedEntry.set(entry);
 			requestedQuantity.set(quantity);
+			requestedLockPose.set(lockPose);
 			return quantity.value();
 		});
 
@@ -137,6 +147,30 @@ class SpawnCommandsTest {
 		assertEquals(3, result);
 		assertSame(EntityType.ZOMBIE, requestedEntry.get().type());
 		assertEquals(new SpawnQuantity(3), requestedQuantity.get());
+		assertEquals(false, requestedLockPose.get());
+	}
+
+	@Test
+	void lockPoseFlagIsForwardedWhenPresent() throws CommandSyntaxException {
+		AtomicReference<Boolean> requestedLockPose = new AtomicReference<>();
+		AtomicReference<SpawnQuantity> requestedQuantity = new AtomicReference<>();
+		CommandDispatcher<CommandSourceStack> dispatcher = registeredDispatcher((source, entry, quantity, lockPose) -> {
+			requestedQuantity.set(quantity);
+			requestedLockPose.set(lockPose);
+			return quantity.value();
+		});
+
+		assertEquals(1, dispatcher.execute("creature_spawn minecraft:zombie true", sourceWithPermission(2)));
+		assertEquals(new SpawnQuantity(1), requestedQuantity.get());
+		assertEquals(true, requestedLockPose.get());
+
+		assertEquals(3, dispatcher.execute("creature_spawn minecraft:zombie 3 true", sourceWithPermission(2)));
+		assertEquals(new SpawnQuantity(3), requestedQuantity.get());
+		assertEquals(true, requestedLockPose.get());
+
+		assertEquals(2, dispatcher.execute("creature_spawn minecraft:zombie 2 false", sourceWithPermission(2)));
+		assertEquals(new SpawnQuantity(2), requestedQuantity.get());
+		assertEquals(false, requestedLockPose.get());
 	}
 
 	@Test
@@ -160,7 +194,7 @@ class SpawnCommandsTest {
 	}
 
 	private static CommandDispatcher<CommandSourceStack> registeredDispatcher() {
-		return registeredDispatcher((source, entry, quantity) -> quantity.value());
+		return registeredDispatcher((source, entry, quantity, lockPose) -> quantity.value());
 	}
 
 	private static CommandDispatcher<CommandSourceStack> registeredDispatcher(SpawnCommands.SpawnAction action) {
@@ -170,7 +204,7 @@ class SpawnCommandsTest {
 	}
 
 	private static SpawnCommands.SpawnAction countingAction(AtomicInteger attempts) {
-		return (source, entry, quantity) -> {
+		return (source, entry, quantity, lockPose) -> {
 			attempts.incrementAndGet();
 			return quantity.value();
 		};

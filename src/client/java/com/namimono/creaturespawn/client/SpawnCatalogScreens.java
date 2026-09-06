@@ -19,6 +19,9 @@ public final class SpawnCatalogScreens {
 	}
 
 	public static void hideDuringReplay(Minecraft client) {
+		if (FlashbackReplay.isActive()) {
+			MobPlacementClient.disable();
+		}
 		if (client.screen instanceof SpawnCatalogScreen
 			&& !SpawnCatalogOpenPolicy.shouldRender(FlashbackReplay.isActive())) {
 			client.setScreen(null);

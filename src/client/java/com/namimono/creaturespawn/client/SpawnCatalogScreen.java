@@ -49,9 +49,12 @@ public final class SpawnCatalogScreen extends Screen {
 	private int page;
 	private int pageCount = 1;
 	private String quantityText = Integer.toString(SpawnQuantity.DEFAULT);
+	private boolean lockPose;
 	private EditBox quantityBox;
 	private Button selectPageButton;
+	private Button lockPoseButton;
 	private Button spawnButton;
+	private Button placeButton;
 	private Button previousButton;
 	private Button nextButton;
 
@@ -76,11 +79,19 @@ public final class SpawnCatalogScreen extends Screen {
 
 		int footerY = height - 28;
 		int selectPageWidth = 76;
-		int spawnWidth = 72;
+		int spawnWidth = 64;
+		int lockPoseWidth = 72;
 		int quantityLabelWidth = 28;
 		int quantityBoxWidth = 36;
-		int spacing = 10;
-		int totalControlsWidth = selectPageWidth + spacing + quantityLabelWidth + quantityBoxWidth + spacing + spawnWidth;
+		int spacing = 8;
+		int totalControlsWidth = selectPageWidth
+			+ spacing
+			+ quantityLabelWidth
+			+ quantityBoxWidth
+			+ spacing
+			+ lockPoseWidth
+			+ spacing
+			+ spawnWidth;
 		int startX = (width - totalControlsWidth) / 2;
 
 		selectPageButton = Button.builder(
@@ -107,7 +118,21 @@ public final class SpawnCatalogScreen extends Screen {
 		});
 		addRenderableWidget(quantityBox);
 
-		int spawnButtonX = quantityBoxX + quantityBoxWidth + spacing;
+		int lockPoseButtonX = quantityBoxX + quantityBoxWidth + spacing;
+		lockPoseButton = Button.builder(
+			lockPoseLabel(),
+			button -> {
+				lockPose = !lockPose;
+				updateLockPoseButton();
+			}
+		).bounds(lockPoseButtonX, footerY, lockPoseWidth, 20)
+			.tooltip(Tooltip.create(Component.translatable(
+				"screen.creature_spawn.spawn_catalog.lock_pose.tooltip"
+			)))
+			.build();
+		addRenderableWidget(lockPoseButton);
+
+		int spawnButtonX = lockPoseButtonX + lockPoseWidth + spacing;
 		spawnButton = Button.builder(
 			Component.translatable("screen.creature_spawn.spawn_catalog.spawn"),
 			button -> submit()
@@ -123,6 +148,15 @@ public final class SpawnCatalogScreen extends Screen {
 			.build();
 		addRenderableWidget(previousButton);
 		addRenderableWidget(nextButton);
+		placeButton = Button.builder(
+			Component.translatable("screen.creature_spawn.spawn_catalog.place_mode"),
+			button -> beginPlacement()
+		).bounds(width / 2 - 160, pagingY, 72, 20)
+			.tooltip(Tooltip.create(Component.translatable(
+				"screen.creature_spawn.spawn_catalog.place_mode.tooltip"
+			)))
+			.build();
+		addRenderableWidget(placeButton);
 
 		rebuildCatalogButtons();
 		updateSpawnButton();
@@ -279,13 +313,42 @@ public final class SpawnCatalogScreen extends Screen {
 		}
 		ClientPlayNetworking.send(new SpawnCatalogC2SPayload(
 			List.copyOf(selectedIds),
-			new SpawnQuantity(quantity)
+			new SpawnQuantity(quantity),
+			lockPose,
+			false
 		));
 	}
 
+	private void beginPlacement() {
+		Integer quantity = validQuantity();
+		if (selectedIds.isEmpty() || quantity == null) {
+			return;
+		}
+		MobPlacementClient.begin(List.copyOf(selectedIds), new SpawnQuantity(quantity), lockPose);
+		onClose();
+	}
+
+	private void updateLockPoseButton() {
+		if (lockPoseButton != null) {
+			lockPoseButton.setMessage(lockPoseLabel());
+		}
+	}
+
+	private Component lockPoseLabel() {
+		return Component.translatable(
+			lockPose
+				? "screen.creature_spawn.spawn_catalog.lock_pose.on"
+				: "screen.creature_spawn.spawn_catalog.lock_pose.off"
+		);
+	}
+
 	private void updateSpawnButton() {
+		boolean ready = !selectedIds.isEmpty() && validQuantity() != null;
 		if (spawnButton != null) {
-			spawnButton.active = !selectedIds.isEmpty() && validQuantity() != null;
+			spawnButton.active = ready;
+		}
+		if (placeButton != null) {
+			placeButton.active = ready;
 		}
 	}
 

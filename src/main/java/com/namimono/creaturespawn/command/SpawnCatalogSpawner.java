@@ -14,6 +14,15 @@ public final class SpawnCatalogSpawner {
 		Collection<ResourceLocation> selectedIds,
 		SpawnQuantity quantity
 	) {
+		return spawn(player, selectedIds, quantity, false);
+	}
+
+	public static int spawn(
+		ServerPlayer player,
+		Collection<ResourceLocation> selectedIds,
+		SpawnQuantity quantity,
+		boolean lockPose
+	) {
 		if (!player.hasPermissions(2)) {
 			return 0;
 		}
@@ -23,6 +32,6 @@ public final class SpawnCatalogSpawner {
 			return 0;
 		}
 
-		return LivingSpawner.spawn(player, plan.entries(), plan.quantity());
+		return LivingSpawner.spawn(player, plan.entries(), plan.quantity(), lockPose);
 	}
 }

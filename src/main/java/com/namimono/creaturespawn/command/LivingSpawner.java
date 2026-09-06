@@ -24,8 +24,17 @@ public final class LivingSpawner {
 	 * @return 实际生成数量；失败时为 0，且不会留下本次已加入世界的实体
 	 */
 	public static int spawn(ServerPlayer player, EntityType<?> type, SpawnQuantity quantity) {
+		return spawn(player, type, quantity, false);
+	}
+
+	public static int spawn(
+		ServerPlayer player,
+		EntityType<?> type,
+		SpawnQuantity quantity,
+		boolean lockPose
+	) {
 		return SpawnCatalog.find(EntityType.getKey(type))
-			.map(entry -> spawn(player, List.of(entry), quantity))
+			.map(entry -> spawn(player, List.of(entry), quantity, lockPose))
 			.orElse(0);
 	}
 
@@ -38,6 +47,15 @@ public final class LivingSpawner {
 		ServerPlayer player,
 		List<SpawnEntry> entries,
 		SpawnQuantity quantity
+	) {
+		return spawn(player, entries, quantity, false);
+	}
+
+	public static int spawn(
+		ServerPlayer player,
+		List<SpawnEntry> entries,
+		SpawnQuantity quantity,
+		boolean lockPose
 	) {
 		if (entries.isEmpty() || entries.stream().anyMatch(entry ->
 			!SpawnCatalog.allows(entry.id(), entry.type())
@@ -73,6 +91,10 @@ public final class LivingSpawner {
 					0.0F
 				);
 				entry.prepare(mob);
+				SpawnedMobs.mark(mob);
+				if (lockPose) {
+					SpawnPoseLocks.lock(mob);
+				}
 				prepared.add(mob);
 			}
 		}
@@ -86,6 +108,34 @@ public final class LivingSpawner {
 			added.add(mob);
 		}
 		return added.size();
+	}
+
+	/**
+	 * 在指定格生成一只；失败时不会留下实体。
+	 */
+	public static boolean place(
+		ServerPlayer player,
+		SpawnEntry entry,
+		BlockPos cell,
+		float yRot,
+		boolean lockPose
+	) {
+		if (!SpawnCatalog.allows(entry.id(), entry.type()) || !ServerLevel.isInSpawnableBounds(cell)) {
+			return false;
+		}
+		ServerLevel level = player.serverLevel();
+		Entity entity = entry.type().create(level);
+		if (!(entity instanceof Mob mob)) {
+			return false;
+		}
+		Vec3 feet = MobPlacement.feet(cell);
+		mob.moveTo(feet.x, feet.y, feet.z, yRot, 0.0F);
+		entry.prepare(mob);
+		SpawnedMobs.mark(mob);
+		if (lockPose) {
+			SpawnPoseLocks.lock(mob);
+		}
+		return level.tryAddFreshEntityWithPassengers(mob);
 	}
 
 	private static Optional<BlockPos> target(ServerPlayer player, ServerLevel level) {
