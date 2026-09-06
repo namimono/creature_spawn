@@ -87,7 +87,7 @@ class SpawnCommandsTest {
 		CommandDispatcher<CommandSourceStack> dispatcher = new CommandDispatcher<>();
 		SpawnCommands.register(
 			dispatcher,
-			(source, type, quantity) -> quantity.value(),
+			(source, entry, quantity) -> quantity.value(),
 			source -> opens.incrementAndGet()
 		);
 
@@ -121,10 +121,10 @@ class SpawnCommandsTest {
 
 	@Test
 	void legalEntityAndQuantityInvokeTheWorldSpawnBoundary() throws CommandSyntaxException {
-		AtomicReference<EntityType<?>> requestedType = new AtomicReference<>();
+		AtomicReference<SpawnEntry> requestedEntry = new AtomicReference<>();
 		AtomicReference<SpawnQuantity> requestedQuantity = new AtomicReference<>();
-		CommandDispatcher<CommandSourceStack> dispatcher = registeredDispatcher((source, type, quantity) -> {
-			requestedType.set(type);
+		CommandDispatcher<CommandSourceStack> dispatcher = registeredDispatcher((source, entry, quantity) -> {
+			requestedEntry.set(entry);
 			requestedQuantity.set(quantity);
 			return quantity.value();
 		});
@@ -135,8 +135,18 @@ class SpawnCommandsTest {
 		);
 
 		assertEquals(3, result);
-		assertSame(EntityType.ZOMBIE, requestedType.get());
+		assertSame(EntityType.ZOMBIE, requestedEntry.get().type());
 		assertEquals(new SpawnQuantity(3), requestedQuantity.get());
+	}
+
+	@Test
+	void chargedCreeperIdIsAcceptedByTheSpawnCommand() {
+		CommandDispatcher<CommandSourceStack> dispatcher = registeredDispatcher();
+
+		assertFullyParsed(dispatcher.parse(
+			"creature_spawn minecraft:charged_creeper",
+			sourceWithPermission(2)
+		));
 	}
 
 	private static void assertFullyParsed(ParseResults<CommandSourceStack> result) {
@@ -150,7 +160,7 @@ class SpawnCommandsTest {
 	}
 
 	private static CommandDispatcher<CommandSourceStack> registeredDispatcher() {
-		return registeredDispatcher((source, type, quantity) -> quantity.value());
+		return registeredDispatcher((source, entry, quantity) -> quantity.value());
 	}
 
 	private static CommandDispatcher<CommandSourceStack> registeredDispatcher(SpawnCommands.SpawnAction action) {
@@ -160,7 +170,7 @@ class SpawnCommandsTest {
 	}
 
 	private static SpawnCommands.SpawnAction countingAction(AtomicInteger attempts) {
-		return (source, type, quantity) -> {
+		return (source, entry, quantity) -> {
 			attempts.incrementAndGet();
 			return quantity.value();
 		};

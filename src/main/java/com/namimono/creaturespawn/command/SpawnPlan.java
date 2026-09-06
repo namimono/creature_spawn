@@ -9,9 +9,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 
 /** 客户端图鉴请求通过服务端校验后得到的不可变刷怪批次。 */
-public record SpawnPlan(List<EntityType<?>> types, SpawnQuantity quantity) {
+public record SpawnPlan(List<SpawnEntry> entries, SpawnQuantity quantity) {
 	public SpawnPlan {
-		types = List.copyOf(types);
+		entries = List.copyOf(entries);
+	}
+
+	public List<EntityType<?>> types() {
+		return entries.stream().map(SpawnEntry::type).toList();
 	}
 
 	public static Optional<SpawnPlan> prepare(
@@ -22,14 +26,14 @@ public record SpawnPlan(List<EntityType<?>> types, SpawnQuantity quantity) {
 			return Optional.empty();
 		}
 
-		List<EntityType<?>> types = new ArrayList<>(selectedIds.size());
+		List<SpawnEntry> entries = new ArrayList<>(selectedIds.size());
 		for (ResourceLocation id : new LinkedHashSet<>(selectedIds)) {
-			Optional<EntityType<?>> type = SpawnCatalog.find(id);
-			if (type.isEmpty()) {
+			Optional<SpawnEntry> entry = SpawnCatalog.find(id);
+			if (entry.isEmpty()) {
 				return Optional.empty();
 			}
-			types.add(type.orElseThrow());
+			entries.add(entry.orElseThrow());
 		}
-		return Optional.of(new SpawnPlan(types, quantity));
+		return Optional.of(new SpawnPlan(entries, quantity));
 	}
 }

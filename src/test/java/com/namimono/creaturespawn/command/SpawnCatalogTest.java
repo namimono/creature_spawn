@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import org.junit.jupiter.api.BeforeAll;
@@ -70,8 +71,28 @@ class SpawnCatalogTest {
 
 	@Test
 	void resolvesVanillaIdsAndRejectsUnknownIds() {
-		assertEquals(EntityType.ZOMBIE, SpawnCatalog.find(ResourceLocation.parse("zombie")).orElseThrow());
+		assertEquals(EntityType.ZOMBIE, SpawnCatalog.find(ResourceLocation.parse("zombie")).orElseThrow().type());
 		assertTrue(SpawnCatalog.find(ResourceLocation.parse("minecraft:not_a_real_mob")).isEmpty());
+	}
+
+	@Test
+	void includesChargedCreeperAsDistinctHostileEntry() {
+		ResourceLocation id = ResourceLocation.parse("minecraft:charged_creeper");
+		SpawnEntry entry = SpawnCatalog.find(id).orElseThrow();
+
+		assertEquals(id, entry.id());
+		assertEquals(EntityType.CREEPER, entry.type());
+		assertEquals(SpawnGroup.HOSTILE, SpawnCatalog.group(entry.type()));
+		assertEquals(
+			Component.translatable("entity.creature_spawn.charged_creeper"),
+			entry.description()
+		);
+		assertTrue(SpawnCatalog.entries().contains(entry));
+		assertTrue(SpawnCatalog.find(ResourceLocation.parse("minecraft:creeper")).isPresent());
+		assertEquals(
+			ResourceLocation.parse("minecraft:creeper"),
+			SpawnCatalog.find(ResourceLocation.parse("minecraft:creeper")).orElseThrow().id()
+		);
 	}
 
 	@Test
@@ -94,7 +115,7 @@ class SpawnCatalogTest {
 	@Test
 	void everyCatalogEntryBelongsToOneOfTheFourVisibleGroups() {
 		Set<SpawnGroup> groups = SpawnCatalog.entries().stream()
-			.map(SpawnCatalog::group)
+			.map(entry -> SpawnCatalog.group(entry.type()))
 			.collect(Collectors.toSet());
 
 		assertEquals(Set.of(SpawnGroup.values()), groups);

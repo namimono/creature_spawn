@@ -24,7 +24,9 @@ public final class LivingSpawner {
 	 * @return 实际生成数量；失败时为 0，且不会留下本次已加入世界的实体
 	 */
 	public static int spawn(ServerPlayer player, EntityType<?> type, SpawnQuantity quantity) {
-		return spawn(player, List.of(type), quantity);
+		return SpawnCatalog.find(EntityType.getKey(type))
+			.map(entry -> spawn(player, List.of(entry), quantity))
+			.orElse(0);
 	}
 
 	/**
@@ -34,11 +36,11 @@ public final class LivingSpawner {
 	 */
 	public static int spawn(
 		ServerPlayer player,
-		List<EntityType<?>> types,
+		List<SpawnEntry> entries,
 		SpawnQuantity quantity
 	) {
-		if (types.isEmpty() || types.stream().anyMatch(type ->
-			!SpawnCatalog.allows(EntityType.getKey(type), type)
+		if (entries.isEmpty() || entries.stream().anyMatch(entry ->
+			!SpawnCatalog.allows(entry.id(), entry.type())
 		)) {
 			return 0;
 		}
@@ -48,7 +50,7 @@ public final class LivingSpawner {
 			return 0;
 		}
 
-		int totalCount = Math.multiplyExact(types.size(), quantity.value());
+		int totalCount = Math.multiplyExact(entries.size(), quantity.value());
 		List<BlockPos> cells = SpawnPlacement.grid(target.orElseThrow(), totalCount);
 		if (cells.stream().anyMatch(pos -> !ServerLevel.isInSpawnableBounds(pos))) {
 			return 0;
@@ -56,10 +58,10 @@ public final class LivingSpawner {
 
 		List<Mob> prepared = new ArrayList<>(cells.size());
 		int cellIndex = 0;
-		for (EntityType<?> type : types) {
+		for (SpawnEntry entry : entries) {
 			for (int index = 0; index < quantity.value(); index++) {
 				BlockPos cell = cells.get(cellIndex++);
-				Entity entity = type.create(level);
+				Entity entity = entry.type().create(level);
 				if (!(entity instanceof Mob mob)) {
 					return 0;
 				}
@@ -70,6 +72,7 @@ public final class LivingSpawner {
 					player.getYRot(),
 					0.0F
 				);
+				entry.prepare(mob);
 				prepared.add(mob);
 			}
 		}

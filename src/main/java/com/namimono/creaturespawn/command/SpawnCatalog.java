@@ -5,10 +5,11 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -18,7 +19,10 @@ import net.minecraft.world.entity.MobCategory;
  * 刷怪工具可用的实体名单：仅原版、可召唤的生物。
  */
 public final class SpawnCatalog {
+	public static final ResourceLocation CHARGED_CREEPER =
+		ResourceLocation.fromNamespaceAndPath("minecraft", "charged_creeper");
 	private static final Set<EntityType<?>> VANILLA_MOBS = discoverVanillaMobs();
+	private static final Map<ResourceLocation, SpawnEntry> ENTRIES = discoverEntries();
 	private static final Set<EntityType<?>> BOSSES = Set.of(
 		EntityType.ENDER_DRAGON,
 		EntityType.WITHER,
@@ -46,19 +50,15 @@ public final class SpawnCatalog {
 	}
 
 	public static boolean allows(ResourceLocation id, EntityType<?> type) {
-		return ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace())
-			&& id.equals(EntityType.getKey(type))
-			&& type.canSummon()
-			&& VANILLA_MOBS.contains(type);
+		return find(id).filter(entry -> entry.type() == type).isPresent();
 	}
 
-	public static Set<EntityType<?>> entries() {
-		return VANILLA_MOBS;
+	public static Set<SpawnEntry> entries() {
+		return Set.copyOf(ENTRIES.values());
 	}
 
-	public static Optional<EntityType<?>> find(ResourceLocation id) {
-		return BuiltInRegistries.ENTITY_TYPE.getOptional(id)
-			.filter(type -> allows(id, type));
+	public static Optional<SpawnEntry> find(ResourceLocation id) {
+		return Optional.ofNullable(ENTRIES.get(id));
 	}
 
 	public static SpawnGroup group(EntityType<?> type) {
@@ -89,6 +89,16 @@ public final class SpawnCatalog {
 			}
 		}
 		return Collections.unmodifiableSet(result);
+	}
+
+	private static Map<ResourceLocation, SpawnEntry> discoverEntries() {
+		Map<ResourceLocation, SpawnEntry> result = new LinkedHashMap<>();
+		for (EntityType<?> type : VANILLA_MOBS) {
+			SpawnEntry entry = new SpawnEntry(EntityType.getKey(type), type);
+			result.put(entry.id(), entry);
+		}
+		result.putIfAbsent(CHARGED_CREEPER, new SpawnEntry(CHARGED_CREEPER, EntityType.CREEPER));
+		return Collections.unmodifiableMap(result);
 	}
 
 	private static boolean isMobEntityType(Type genericType) {

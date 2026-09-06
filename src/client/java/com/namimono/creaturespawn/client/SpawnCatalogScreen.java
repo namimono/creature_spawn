@@ -2,13 +2,14 @@ package com.namimono.creaturespawn.client;
 
 import com.namimono.creaturespawn.SpawnCatalogOpenPolicy;
 import com.namimono.creaturespawn.command.SpawnCatalog;
+import com.namimono.creaturespawn.command.SpawnEntry;
 import com.namimono.creaturespawn.command.SpawnGroup;
 import com.namimono.creaturespawn.command.SpawnQuantity;
 import com.namimono.creaturespawn.network.SpawnCatalogC2SPayload;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,8 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 
 /** 权限命令打开的简易多选刷怪图鉴。 */
 public final class SpawnCatalogScreen extends Screen {
@@ -40,8 +41,8 @@ public final class SpawnCatalogScreen extends Screen {
 	private static final int MAX_COLUMNS = 8;
 	private static final int MAX_ROWS = 3;
 
-	private final Map<SpawnGroup, List<EntityType<?>>> groupedEntries = groupedEntries();
-	private final Map<EntityType<?>, LivingEntity> previewEntities = new IdentityHashMap<>();
+	private final Map<SpawnGroup, List<SpawnEntry>> groupedEntries = groupedEntries();
+	private final Map<ResourceLocation, LivingEntity> previewEntities = new HashMap<>();
 	private final Set<ResourceLocation> selectedIds = new LinkedHashSet<>();
 	private final List<CatalogButton> catalogButtons = new ArrayList<>();
 	private SpawnGroup activeGroup = SpawnGroup.HOSTILE;
@@ -145,7 +146,7 @@ public final class SpawnCatalogScreen extends Screen {
 		int columns = calculateColumns();
 		int rows = calculateRows();
 		int pageSize = columns * rows;
-		List<EntityType<?>> entries = groupedEntries.get(activeGroup);
+		List<SpawnEntry> entries = groupedEntries.get(activeGroup);
 		pageCount = Math.max(1, (entries.size() + pageSize - 1) / pageSize);
 		page = Math.min(page, pageCount - 1);
 
@@ -155,13 +156,13 @@ public final class SpawnCatalogScreen extends Screen {
 		int gridX = (width - gridWidth) / 2;
 		for (int entryIndex = first; entryIndex < last; entryIndex++) {
 			int localIndex = entryIndex - first;
-			EntityType<?> type = entries.get(entryIndex);
-			ResourceLocation id = EntityType.getKey(type);
+			SpawnEntry entry = entries.get(entryIndex);
+			ResourceLocation id = entry.id();
 			CatalogButton button = new CatalogButton(
 				gridX + (localIndex % columns) * (CELL_WIDTH + CELL_GAP),
 				GRID_TOP + (localIndex / columns) * (CELL_HEIGHT + CELL_GAP),
-				type,
-				previewEntity(type),
+				entry,
+				previewEntity(entry),
 				() -> selectedIds.contains(id),
 				() -> toggle(id)
 			);
@@ -181,8 +182,8 @@ public final class SpawnCatalogScreen extends Screen {
 		return Math.max(1, Math.min(MAX_ROWS, (height - 126) / (CELL_HEIGHT + CELL_GAP)));
 	}
 
-	private List<EntityType<?>> currentPageEntries() {
-		List<EntityType<?>> entries = groupedEntries.get(activeGroup);
+	private List<SpawnEntry> currentPageEntries() {
+		List<SpawnEntry> entries = groupedEntries.get(activeGroup);
 		if (entries == null || entries.isEmpty()) {
 			return List.of();
 		}
@@ -195,12 +196,12 @@ public final class SpawnCatalogScreen extends Screen {
 		return entries.subList(first, last);
 	}
 
-	private boolean isCurrentPageAllSelected(List<EntityType<?>> currentEntries) {
+	private boolean isCurrentPageAllSelected(List<SpawnEntry> currentEntries) {
 		if (currentEntries.isEmpty()) {
 			return false;
 		}
-		for (EntityType<?> type : currentEntries) {
-			if (!selectedIds.contains(EntityType.getKey(type))) {
+		for (SpawnEntry entry : currentEntries) {
+			if (!selectedIds.contains(entry.id())) {
 				return false;
 			}
 		}
@@ -208,14 +209,14 @@ public final class SpawnCatalogScreen extends Screen {
 	}
 
 	private void toggleSelectCurrentPage() {
-		List<EntityType<?>> currentEntries = currentPageEntries();
+		List<SpawnEntry> currentEntries = currentPageEntries();
 		if (currentEntries.isEmpty()) {
 			return;
 		}
 
 		boolean allSelected = isCurrentPageAllSelected(currentEntries);
-		for (EntityType<?> type : currentEntries) {
-			ResourceLocation id = EntityType.getKey(type);
+		for (SpawnEntry entry : currentEntries) {
+			ResourceLocation id = entry.id();
 			if (allSelected) {
 				selectedIds.remove(id);
 			} else {
@@ -231,7 +232,7 @@ public final class SpawnCatalogScreen extends Screen {
 		if (selectPageButton == null) {
 			return;
 		}
-		List<EntityType<?>> currentEntries = currentPageEntries();
+		List<SpawnEntry> currentEntries = currentPageEntries();
 		if (currentEntries.isEmpty()) {
 			selectPageButton.active = false;
 			selectPageButton.setMessage(Component.translatable("screen.creature_spawn.spawn_catalog.select_page"));
@@ -246,15 +247,18 @@ public final class SpawnCatalogScreen extends Screen {
 		));
 	}
 
-	private LivingEntity previewEntity(EntityType<?> type) {
-		LivingEntity cached = previewEntities.get(type);
+	private LivingEntity previewEntity(SpawnEntry entry) {
+		LivingEntity cached = previewEntities.get(entry.id());
 		if (cached != null || minecraft == null || minecraft.level == null) {
 			return cached;
 		}
 
-		Entity created = type.create(minecraft.level);
+		Entity created = entry.type().create(minecraft.level);
 		if (created instanceof LivingEntity living) {
-			previewEntities.put(type, living);
+			if (living instanceof Mob mob) {
+				entry.prepare(mob);
+			}
+			previewEntities.put(entry.id(), living);
 			return living;
 		}
 		return null;
@@ -298,16 +302,16 @@ public final class SpawnCatalogScreen extends Screen {
 		return value.isEmpty() || value.chars().allMatch(Character::isDigit);
 	}
 
-	private static Map<SpawnGroup, List<EntityType<?>>> groupedEntries() {
-		Map<SpawnGroup, List<EntityType<?>>> grouped = new EnumMap<>(SpawnGroup.class);
+	private static Map<SpawnGroup, List<SpawnEntry>> groupedEntries() {
+		Map<SpawnGroup, List<SpawnEntry>> grouped = new EnumMap<>(SpawnGroup.class);
 		for (SpawnGroup group : SpawnGroup.values()) {
 			grouped.put(group, new ArrayList<>());
 		}
-		for (EntityType<?> type : SpawnCatalog.entries()) {
-			grouped.get(SpawnCatalog.group(type)).add(type);
+		for (SpawnEntry entry : SpawnCatalog.entries()) {
+			grouped.get(SpawnCatalog.group(entry.type())).add(entry);
 		}
-		for (List<EntityType<?>> entries : grouped.values()) {
-			entries.sort(Comparator.comparing(type -> EntityType.getKey(type).toString()));
+		for (List<SpawnEntry> entries : grouped.values()) {
+			entries.sort(Comparator.comparing(entry -> entry.id().toString()));
 		}
 		return grouped;
 	}
@@ -357,7 +361,7 @@ public final class SpawnCatalogScreen extends Screen {
 		private static final int MODEL_BOTTOM_OFFSET = 13;
 		private static final float MAX_MODEL_SCALE = 26.0F;
 
-		private final EntityType<?> type;
+		private final SpawnEntry entry;
 		private final LivingEntity previewEntity;
 		private final BooleanSupplier selected;
 		private final Runnable onPress;
@@ -365,17 +369,17 @@ public final class SpawnCatalogScreen extends Screen {
 		private CatalogButton(
 			int x,
 			int y,
-			EntityType<?> type,
+			SpawnEntry entry,
 			LivingEntity previewEntity,
 			BooleanSupplier selected,
 			Runnable onPress
 		) {
 			super(x, y, CELL_WIDTH, CELL_HEIGHT, Component.empty());
-			this.type = type;
+			this.entry = entry;
 			this.previewEntity = previewEntity;
 			this.selected = selected;
 			this.onPress = onPress;
-			setTooltip(Tooltip.create(type.getDescription()));
+			setTooltip(Tooltip.create(entry.description()));
 		}
 
 		@Override
@@ -423,7 +427,7 @@ public final class SpawnCatalogScreen extends Screen {
 		}
 
 		private void renderName(GuiGraphics graphics, boolean centeredVertically) {
-			String name = type.getDescription().getString();
+			String name = entry.description().getString();
 			int maxWidth = getWidth() - 6;
 			if (Minecraft.getInstance().font.width(name) > maxWidth) {
 				name = Minecraft.getInstance().font.plainSubstrByWidth(name, maxWidth - 6) + "…";
@@ -442,7 +446,7 @@ public final class SpawnCatalogScreen extends Screen {
 
 		@Override
 		protected void updateWidgetNarration(NarrationElementOutput output) {
-			output.add(NarratedElementType.TITLE, type.getDescription());
+			output.add(NarratedElementType.TITLE, entry.description());
 		}
 	}
 }

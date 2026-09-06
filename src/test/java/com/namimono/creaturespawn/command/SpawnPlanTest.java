@@ -28,6 +28,25 @@ class SpawnPlanTest {
 	}
 
 	@Test
+	void chargedCreeperIsPlannedAsACreeperVariant() {
+		SpawnPlan plan = SpawnPlan.prepare(
+			List.of(
+				ResourceLocation.parse("minecraft:creeper"),
+				ResourceLocation.parse("minecraft:charged_creeper")
+			),
+			new SpawnQuantity(1)
+		).orElseThrow();
+
+		assertEquals(
+			List.of(
+				new SpawnEntry(ResourceLocation.parse("minecraft:creeper"), EntityType.CREEPER),
+				new SpawnEntry(ResourceLocation.parse("minecraft:charged_creeper"), EntityType.CREEPER)
+			),
+			plan.entries()
+		);
+	}
+
+	@Test
 	void emptySelectionDoesNotCreateASpawnPlan() {
 		assertTrue(SpawnPlan.prepare(List.of(), new SpawnQuantity(5)).isEmpty());
 	}

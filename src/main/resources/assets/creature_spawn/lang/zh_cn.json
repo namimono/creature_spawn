@@ -2,6 +2,7 @@
   "commands.creature_spawn.unknown_entity": "未知或不支持的活体：%s",
   "commands.creature_spawn.failed": "无法找到有效生成落点",
   "commands.creature_spawn.success": "已生成 %s 只 %s",
+  "entity.creature_spawn.charged_creeper": "闪电苦力怕",
   "screen.creature_spawn.spawn_catalog.title": "刷怪图鉴",
   "screen.creature_spawn.spawn_catalog.group.hostile": "敌对",
   "screen.creature_spawn.spawn_catalog.group.neutral": "中立",

@@ -23,6 +23,6 @@ public final class SpawnCatalogSpawner {
 			return 0;
 		}
 
-		return LivingSpawner.spawn(player, plan.types(), plan.quantity());
+		return LivingSpawner.spawn(player, plan.entries(), plan.quantity());
 	}
 }

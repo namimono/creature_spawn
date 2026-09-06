@@ -9,6 +9,7 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.namimono.creaturespawn.network.OpenSpawnCatalogS2CPayload;
+import java.util.List;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.CommandSourceStack;
@@ -17,7 +18,6 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EntityType;
 
 /**
  * 模组指令：打开图鉴或直接刷一种原版活体。
@@ -31,7 +31,7 @@ public final class SpawnCommands {
 	);
 	private static final SuggestionProvider<CommandSourceStack> ENTITY_SUGGESTIONS = (ctx, builder) ->
 		SharedSuggestionProvider.suggestResource(
-			SpawnCatalog.entries().stream().map(EntityType::getKey),
+			SpawnCatalog.entries().stream().map(SpawnEntry::id),
 			builder
 		);
 
@@ -78,10 +78,10 @@ public final class SpawnCommands {
 	)
 		throws CommandSyntaxException {
 		ResourceLocation id = ResourceLocationArgument.getId(ctx, "entity");
-		EntityType<?> type = SpawnCatalog.find(id)
+		SpawnEntry entry = SpawnCatalog.find(id)
 			.orElseThrow(() -> UNKNOWN_ENTITY.create(id));
 		SpawnQuantity quantity = SpawnQuantity.fromNullable(requestedQuantity);
-		int spawned = spawnAction.spawn(ctx.getSource(), type, quantity);
+		int spawned = spawnAction.spawn(ctx.getSource(), entry, quantity);
 		if (spawned == 0) {
 			throw SPAWN_FAILED.create();
 		}
@@ -89,16 +89,16 @@ public final class SpawnCommands {
 			() -> Component.translatable(
 				"commands.creature_spawn.success",
 				spawned,
-				type.getDescription()
+				entry.description()
 			),
 			true
 		);
 		return spawned;
 	}
 
-	private static int spawnInWorld(CommandSourceStack source, EntityType<?> type, SpawnQuantity quantity)
+	private static int spawnInWorld(CommandSourceStack source, SpawnEntry entry, SpawnQuantity quantity)
 		throws CommandSyntaxException {
-		return LivingSpawner.spawn(source.getPlayerOrException(), type, quantity);
+		return LivingSpawner.spawn(source.getPlayerOrException(), List.of(entry), quantity);
 	}
 
 	private static int openCatalogForPlayer(CommandSourceStack source) throws CommandSyntaxException {
@@ -108,7 +108,7 @@ public final class SpawnCommands {
 
 	@FunctionalInterface
 	interface SpawnAction {
-		int spawn(CommandSourceStack source, EntityType<?> type, SpawnQuantity quantity)
+		int spawn(CommandSourceStack source, SpawnEntry entry, SpawnQuantity quantity)
 			throws CommandSyntaxException;
 	}
 
